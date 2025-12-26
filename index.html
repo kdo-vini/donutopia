@@ -112,37 +112,38 @@
             "@type": "City",
             "name": "Promissão e região"
         },
-        "hasOfferCatalog": {
-            "@type": "OfferCatalog",
-            "name": "Cardápio Donutopia",
-            "itemListElement": [
+        "hasMenu": {
+            "@type": "Menu",
+            "hasMenuSection": [
                 {
-                    "@type": "Offer",
-                    "itemOffered": {
-                        "@type": "Product",
-                        "name": "Donuts Americanos",
-                        "description": "Donuts grandes estilo americano, fritos, artesanais com diversas coberturas",
-                        "image": "https://donutopia.com.br/assets/donut-pink.png"
-                    },
-                    "availability": "https://schema.org/PreOrder",
-                    "priceSpecification": {
-                        "@type": "PriceSpecification",
-                        "priceCurrency": "BRL"
-                    }
-                },
-                {
-                    "@type": "Offer",
-                    "itemOffered": {
-                        "@type": "Product",
-                        "name": "Mini Cake Donuts",
-                        "description": "Mini donuts perfeitos para festas, eventos e pequenas porções",
-                        "image": "https://donutopia.com.br/assets/mini-cake-donuts.png"
-                    },
-                    "availability": "https://schema.org/PreOrder",
-                    "priceSpecification": {
-                        "@type": "PriceSpecification",
-                        "priceCurrency": "BRL"
-                    }
+                    "@type": "MenuSection",
+                    "name": "Donuts",
+                    "hasMenuItem": [
+                        {
+                            "@type": "MenuItem",
+                            "@id": "https://donutopia.com.br#donuts-americanos",
+                            "name": "Donuts Americanos",
+                            "description": "Donuts grandes estilo americano, fritos, artesanais com diversas coberturas",
+                            "image": "https://donutopia.com.br/assets/donut-pink.png",
+                            "offers": {
+                                "@type": "Offer",
+                                "availability": "https://schema.org/PreOrder",
+                                "priceCurrency": "BRL"
+                            }
+                        },
+                        {
+                            "@type": "MenuItem",
+                            "@id": "https://donutopia.com.br#mini-cake-donuts",
+                            "name": "Mini Cake Donuts",
+                            "description": "Mini donuts perfeitos para festas, eventos e pequenas porções",
+                            "image": "https://donutopia.com.br/assets/mini-cake-donuts.png",
+                            "offers": {
+                                "@type": "Offer",
+                                "availability": "https://schema.org/PreOrder",
+                                "priceCurrency": "BRL"
+                            }
+                        }
+                    ]
                 }
             ]
         }
