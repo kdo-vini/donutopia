@@ -198,6 +198,26 @@ document.querySelectorAll('a[href*="instagram.com"]').forEach(link => {
    Menu & Ordering System Logic
    ========================================== */
 
+// Descrições gourmet para cada sabor
+const flavorDescriptions = {
+    // Clássicos
+    "Chocolate": "Massa artesanal fofinha com cobertura aveludada de chocolate ao leite blend.",
+    "Açúcar e Canela": "Massa dourada e aerada, envolta em açúcar cristal com canela, um clássico irresistível.",
+    "Chocolate Branco": "Massa macia coberta com generosa camada de chocolate branco cremoso.",
+
+    // Recheados
+    "Brigadeiro Meio Amargo": "Massa fofinha recheada com brigadeiro gourmet meio amargo, cobertura de chocolate e granulado em flocos.",
+    "Doce de Leite": "Massa artesanal com recheio cremoso de doce de leite, cobertura de chocolate ao leite finalizado com chocolate branco.",
+    "Beijinho": "Massa delicada com recheio de beijinho caseiro, cobertura de chocolate ao leite finalizado com coco ralado.",
+    "Nesquik": "Massa fofinha recheada com creme de Nesquik cremoso, cobertura de chocolate com corante rosado.",
+
+    // Gourmet
+    "Oreo": "Massa de brigadeiro branco com Oreo original triturado, cobertura cremosa de chocolate branco com farelo crocante de Oreo.",
+    "Kit Kat": "Massa artesanal com recheio de brigadeiro meio amargo com Kit Kat triturado, cobertura de chocolate ao leite com com uma barra de Kit Kat.",
+    "Nutella": "Massa fofinha com generoso recheio de Nutella original, cobertura de chocolate branco e finalização em ganache de chocolate ao leite.",
+    "Limão Siciliano": "Massa leve com recheio de limão siciliano artesanal, cobertura de chocolate branco e raspas de limão siciliano fresco."
+};
+
 const menuData = {
     tradicional: {
         title: "Donuts Tradicionais",
@@ -278,7 +298,7 @@ function createMenuItem(name, category, price, type) {
                 <span class="menu-item-price">${formattedPrice}</span>
             </div>
             <div class="menu-item-description">
-                ${type === 'mini' ? 'Mini Cake Donut fofinho.' : 'Donut grande tradicional.'}
+                ${flavorDescriptions[name] || (type === 'mini' ? 'Mini Cake Donut fofinho.' : 'Donut grande tradicional.')}
             </div>
             <div class="menu-item-actions">
                 <div class="quantity-control">
