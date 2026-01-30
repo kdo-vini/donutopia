@@ -198,6 +198,127 @@ document.querySelectorAll('a[href*="instagram.com"]').forEach(link => {
    Menu & Ordering System Logic
    ========================================== */
 
+/* ==========================================
+   🎉 SISTEMA DE PROMOÇÕES - CONFIGURAÇÃO
+   ==========================================
+   
+   Para ATIVAR/DESATIVAR promoções, altere o valor de "enabled" para true/false.
+   
+   PROMOÇÃO ATUAL: "Leve 3 Gourmet por R$ 35,90"
+   - Válida APENAS para donuts TRADICIONAIS da categoria GOURMET
+   - A cada 3 unidades Gourmet, aplica-se o preço promocional
+   - Unidades excedentes (que não completam múltiplos de 3) pagam preço normal
+   
+   EXEMPLOS:
+   - 3 Gourmet = R$ 35,90 (economia de R$ 6,10)
+   - 4 Gourmet = R$ 35,90 + R$ 14,00 = R$ 49,90
+   - 5 Gourmet = R$ 35,90 + R$ 28,00 = R$ 63,90
+   - 6 Gourmet = R$ 35,90 × 2 = R$ 71,80
+   
+   ========================================== */
+
+const PROMOTIONS_CONFIG = {
+    // ═══════════════════════════════════════════
+    // PROMOÇÃO: LEVE 3 GOURMET POR R$ 34,90
+    // ═══════════════════════════════════════════
+    gourmet3x: {
+        enabled: true,                    // ← ALTERE PARA false PARA DESATIVAR
+        name: "Leve 3 Gourmet por R$ 35,90",
+        description: "Promo válida para Donuts Tradicionais Gourmet",
+        category: "Gourmet",              // Categoria alvo (case-sensitive!)
+        type: "tradicional",              // Tipo de produto alvo
+        requiredQty: 3,                   // Quantidade mínima para ativar
+        promoPrice: 35.90,                // Preço promocional para cada 3 unidades
+        originalPricePerUnit: 14.00       // Preço original por unidade (para cálculo do desconto)
+    }
+};
+
+/**
+ * Calcula o preço total considerando promoções ativas.
+ * Esta função é usada internamente para calcular o subtotal do carrinho.
+ * 
+ * @returns {Object} { subtotal, promoDetails, savings }
+ *   - subtotal: valor total com promoções aplicadas
+ *   - promoDetails: array de objetos descrevendo cada promo aplicada
+ *   - savings: economia total com promoções
+ */
+function calculateCartWithPromotions() {
+    let subtotal = 0;
+    let savings = 0;
+    const promoDetails = [];
+
+    // Primeiro, identifica quantos itens gourmet tradicionais temos
+    const promo = PROMOTIONS_CONFIG.gourmet3x;
+    let gourmetQty = 0;
+
+    if (promo.enabled) {
+        Object.values(cart).forEach(item => {
+            if (item.category === promo.category && item.type === promo.type) {
+                gourmetQty += item.qty;
+            }
+        });
+    }
+
+    // Calcula quantos "combos" de 3 e quantos itens excedentes
+    const promoSets = Math.floor(gourmetQty / promo.requiredQty);
+    const extraItems = gourmetQty % promo.requiredQty;
+
+    // Calcula preços
+    Object.values(cart).forEach(item => {
+        if (promo.enabled && item.category === promo.category && item.type === promo.type) {
+            // Itens promocionais - serão calculados separadamente
+            return;
+        }
+        // Itens normais (não promocionais ou se promo desativada)
+        subtotal += item.qty * item.price;
+    });
+
+    // Adiciona valor promocional para itens Gourmet
+    if (promo.enabled && gourmetQty > 0) {
+        const promoValue = promoSets * promo.promoPrice;
+        const extraValue = extraItems * promo.originalPricePerUnit;
+        const totalGourmetValue = promoValue + extraValue;
+
+        // Valor que seria sem promoção
+        const originalValue = gourmetQty * promo.originalPricePerUnit;
+        const currentSavings = originalValue - totalGourmetValue;
+
+        subtotal += totalGourmetValue;
+
+        if (promoSets > 0) {
+            savings = currentSavings;
+            promoDetails.push({
+                name: promo.name,
+                sets: promoSets,
+                extras: extraItems,
+                promoValue: promoValue,
+                extraValue: extraValue,
+                savings: currentSavings
+            });
+        }
+    }
+
+    return { subtotal, promoDetails, savings };
+}
+
+/**
+ * Retorna uma string formatada descrevendo as promoções aplicadas.
+ * Útil para exibir no modal e na mensagem do WhatsApp.
+ */
+function getPromoDescription(promoDetails) {
+    if (promoDetails.length === 0) return '';
+
+    let description = '';
+    promoDetails.forEach(promo => {
+        description += `🏷️ ${promo.name}: ${promo.sets}x combo(s)`;
+        if (promo.extras > 0) {
+            description += ` + ${promo.extras} un. avulsa(s)`;
+        }
+        description += ` (economia: ${promo.savings.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`;
+    });
+    return description;
+}
+
 // Descrições gourmet para cada sabor
 const flavorDescriptions = {
     // Clássicos
@@ -448,15 +569,20 @@ function updateFloatingCart() {
     const totalSpan = floatCart.querySelector('.cart-total');
 
     let totalQty = 0;
-    let totalPrice = 0;
-
     Object.values(cart).forEach(item => {
         totalQty += item.qty;
-        totalPrice += item.qty * item.price;
     });
 
+    // Usa o sistema de promoções para calcular o total
+    const { subtotal, promoDetails, savings } = calculateCartWithPromotions();
+
     countSpan.textContent = `${totalQty} itens`;
-    totalSpan.textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    // Mostra economia se houver promoção aplicada
+    if (savings > 0) {
+        totalSpan.innerHTML = `${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} <span class="promo-savings">🏷️</span>`;
+    } else {
+        totalSpan.textContent = subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
 
     if (totalQty > 0) {
         floatCart.classList.remove('hidden');
@@ -472,11 +598,9 @@ function openModal() {
 
     // Render Items
     let html = '';
-    let subtotal = 0;
 
     Object.values(cart).forEach(item => {
         const itemTotal = item.qty * item.price;
-        subtotal += itemTotal;
         html += `
             <div class="cart-item-row">
                 <span>${item.qty}x ${item.name} (${item.type === 'mini' ? 'Mini' : 'Gd'})</span>
@@ -484,6 +608,17 @@ function openModal() {
             </div>
         `;
     });
+
+    // Usa o sistema de promoções para calcular subtotal
+    const { subtotal, promoDetails, savings } = calculateCartWithPromotions();
+
+    // Adiciona informação da promoção se aplicada
+    if (promoDetails.length > 0) {
+        html += `<div class="cart-promo-row">`;
+        html += `<span class="promo-badge">🏷️ ${promoDetails[0].name}</span>`;
+        html += `<span class="promo-savings">- ${savings.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>`;
+        html += `</div>`;
+    }
 
     preview.innerHTML = html;
     document.getElementById('modal-subtotal').textContent = subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -500,8 +635,8 @@ function updateModalTotal() {
     const addressGroup = document.getElementById('address-group');
     const deliveryNote = document.getElementById('delivery-note');
 
-    let subtotal = 0;
-    Object.values(cart).forEach(item => subtotal += (item.qty * item.price));
+    // Usa o sistema de promoções para calcular subtotal
+    const { subtotal } = calculateCartWithPromotions();
 
     let deliveryFee = 0;
     if (deliveryType === 'delivery') {
@@ -523,11 +658,8 @@ function generateWhatsAppMessage() {
     const deliveryType = document.querySelector('input[name="delivery-type"]:checked').value;
     const address = document.getElementById('delivery-address').value;
 
-    // Calculate totals first for validation
-    let subtotal = 0;
-    Object.values(cart).forEach(item => {
-        subtotal += item.qty * item.price;
-    });
+    // Usa o sistema de promoções para calcular totais
+    const { subtotal, promoDetails, savings } = calculateCartWithPromotions();
     let deliveryFee = deliveryType === 'delivery' ? 8.00 : 0;
     const finalTotal = subtotal + deliveryFee;
 
@@ -568,6 +700,16 @@ function generateWhatsAppMessage() {
         const itemTotal = item.qty * item.price;
         message += `${item.qty}x ${item.name} (${item.type === 'mini' ? 'Mini' : 'Trad.'}) - ${itemTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
     });
+
+    // Adiciona informação da promoção aplicada
+    if (promoDetails.length > 0) {
+        message += `\n🏷️ *Promoção Aplicada:* ${promoDetails[0].name}\n`;
+        message += `📦 ${promoDetails[0].sets}x combo(s) de 3`;
+        if (promoDetails[0].extras > 0) {
+            message += ` + ${promoDetails[0].extras} un. avulsa(s)`;
+        }
+        message += `\n💰 *Economia:* ${savings.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+    }
 
     if (deliveryType === 'delivery') {
         message += `\n*Entrega:* Delivery (Promissão) - R$ 8,00\n`;

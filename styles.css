@@ -1862,3 +1862,46 @@ ul {
 .hidden {
     display: none !important;
 }
+
+/* ==========================================
+   Estilos de Promoção - Leve 3 Gourmet
+   ========================================== */
+.cart-promo-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    margin-top: var(--space-3);
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-radius: var(--radius-md);
+    border: 1px dashed #4caf50;
+}
+
+.promo-badge {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--brown-dark);
+}
+
+.cart-promo-row .promo-savings {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: #2e7d32;
+}
+
+/* Indicador de promo no botão flutuante */
+.floating-cart .promo-savings {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
