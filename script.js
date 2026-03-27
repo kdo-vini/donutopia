@@ -266,13 +266,25 @@ window.applyCoupon = function () {
         feedback.classList.remove('hidden');
         input.value = code;
     } else {
-        appliedCoupon = null;
         feedback.textContent = 'Cupom inválido ou expirado.';
         feedback.className = 'coupon-feedback error';
         feedback.classList.remove('hidden');
     }
 
     updateModalTotal();
+};
+
+window.removeCoupon = function () {
+    appliedCoupon = null;
+    const input = document.getElementById('coupon-input');
+    const feedback = document.getElementById('coupon-feedback');
+    if (input) input.value = '';
+    if (feedback) {
+        feedback.textContent = '';
+        feedback.classList.add('hidden');
+    }
+    updateModalTotal();
+    updateFloatingCart();
 };
 
 function applyCouponToTotal(subtotal) {
@@ -623,13 +635,13 @@ function updateFloatingCart() {
         totalQty += item.qty;
     });
 
-    // Usa o sistema de promoções para calcular o total
-    const { subtotal, promoDetails, savings } = calculateCartWithPromotions();
+    const { subtotal } = calculateCartWithPromotions();
+    const { discountedTotal } = applyCouponToTotal(subtotal);
 
     countSpan.textContent = `${totalQty} itens`;
     // Mostra badge de cupom se houver cupom aplicado
     if (appliedCoupon) {
-        totalSpan.innerHTML = `${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} <span class="promo-savings">🏷️</span>`;
+        totalSpan.innerHTML = `${discountedTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} <span class="promo-savings">🏷️</span>`;
     } else {
         totalSpan.textContent = subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
@@ -721,7 +733,7 @@ function generateWhatsAppMessage() {
     const deliveryType = document.querySelector('input[name="delivery-type"]:checked').value;
     const address = document.getElementById('delivery-address').value;
 
-    const { subtotal, promoDetails, savings } = calculateCartWithPromotions();
+    const { subtotal } = calculateCartWithPromotions();
     const { discountedTotal, couponDiscount } = applyCouponToTotal(subtotal);
     let deliveryFee = deliveryType === 'delivery' ? 8.00 : 0;
     const finalTotal = discountedTotal + deliveryFee;
