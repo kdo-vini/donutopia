@@ -415,6 +415,20 @@
                     </div>
                 </form>
 
+                <div class="coupon-group">
+                    <label for="coupon-input">Cupom de Desconto:</label>
+                    <div class="coupon-input-wrapper">
+                        <input type="text" id="coupon-input" placeholder="Digite o código do cupom">
+                        <button type="button" id="apply-coupon-btn" onclick="applyCoupon()">Aplicar</button>
+                    </div>
+                    <div id="coupon-feedback" class="coupon-feedback hidden"></div>
+                </div>
+
+                <div id="coupon-discount-row" class="cart-coupon-row hidden">
+                    <span>🏷️ Cupom <strong id="coupon-code-display"></strong>:</span>
+                    <span class="coupon-savings" id="coupon-discount-display">- R$ 0,00</span>
+                </div>
+
                 <div class="cart-total-row">
                     <span>Total Final:</span>
                     <span id="modal-total-final">R$ 0,00</span>
