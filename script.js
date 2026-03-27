@@ -222,7 +222,7 @@ const PROMOTIONS_CONFIG = {
     // PROMOÇÃO: LEVE 3 GOURMET POR R$ 34,90
     // ═══════════════════════════════════════════
     gourmet3x: {
-        enabled: true,                    // ← ALTERE PARA false PARA DESATIVAR
+        enabled: false,                   // ← ALTERE PARA false PARA DESATIVAR
         name: "Leve 3 Gourmet por R$ 35,90",
         description: "Promo válida para Donuts Tradicionais Gourmet",
         category: "Gourmet",              // Categoria alvo (case-sensitive!)
@@ -233,10 +233,60 @@ const PROMOTIONS_CONFIG = {
     }
 };
 
+/* ==========================================
+   🎟️ SISTEMA DE CUPONS
+   ========================================== */
+
+const COUPONS_CONFIG = {
+    'LUAN10': {
+        discount: 0.10,
+        description: '10% de desconto em qualquer compra'
+    }
+};
+
+let appliedCoupon = null;
+
+window.applyCoupon = function () {
+    const input = document.getElementById('coupon-input');
+    const feedback = document.getElementById('coupon-feedback');
+    const code = input.value.trim().toUpperCase();
+
+    if (!code) {
+        feedback.textContent = 'Digite um código de cupom.';
+        feedback.className = 'coupon-feedback error';
+        feedback.classList.remove('hidden');
+        return;
+    }
+
+    if (COUPONS_CONFIG[code]) {
+        appliedCoupon = code;
+        const coupon = COUPONS_CONFIG[code];
+        feedback.textContent = `Cupom aplicado! ${coupon.description}`;
+        feedback.className = 'coupon-feedback success';
+        feedback.classList.remove('hidden');
+        input.value = code;
+    } else {
+        appliedCoupon = null;
+        feedback.textContent = 'Cupom inválido ou expirado.';
+        feedback.className = 'coupon-feedback error';
+        feedback.classList.remove('hidden');
+    }
+
+    updateModalTotal();
+};
+
+function applyCouponToTotal(subtotal) {
+    if (!appliedCoupon || !COUPONS_CONFIG[appliedCoupon]) {
+        return { discountedTotal: subtotal, couponDiscount: 0 };
+    }
+    const couponDiscount = subtotal * COUPONS_CONFIG[appliedCoupon].discount;
+    return { discountedTotal: subtotal - couponDiscount, couponDiscount };
+}
+
 /**
  * Calcula o preço total considerando promoções ativas.
  * Esta função é usada internamente para calcular o subtotal do carrinho.
- * 
+ *
  * @returns {Object} { subtotal, promoDetails, savings }
  *   - subtotal: valor total com promoções aplicadas
  *   - promoDetails: array de objetos descrevendo cada promo aplicada
@@ -577,8 +627,8 @@ function updateFloatingCart() {
     const { subtotal, promoDetails, savings } = calculateCartWithPromotions();
 
     countSpan.textContent = `${totalQty} itens`;
-    // Mostra economia se houver promoção aplicada
-    if (savings > 0) {
+    // Mostra badge de cupom se houver cupom aplicado
+    if (appliedCoupon) {
         totalSpan.innerHTML = `${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} <span class="promo-savings">🏷️</span>`;
     } else {
         totalSpan.textContent = subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -635,8 +685,21 @@ function updateModalTotal() {
     const addressGroup = document.getElementById('address-group');
     const deliveryNote = document.getElementById('delivery-note');
 
-    // Usa o sistema de promoções para calcular subtotal
     const { subtotal } = calculateCartWithPromotions();
+    const { discountedTotal, couponDiscount } = applyCouponToTotal(subtotal);
+
+    // Atualiza linha de desconto por cupom
+    const couponRow = document.getElementById('coupon-discount-row');
+    if (couponRow) {
+        if (couponDiscount > 0) {
+            document.getElementById('coupon-code-display').textContent = appliedCoupon;
+            document.getElementById('coupon-discount-display').textContent =
+                `- ${couponDiscount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+            couponRow.classList.remove('hidden');
+        } else {
+            couponRow.classList.add('hidden');
+        }
+    }
 
     let deliveryFee = 0;
     if (deliveryType === 'delivery') {
@@ -648,7 +711,7 @@ function updateModalTotal() {
         deliveryNote.classList.add('hidden');
     }
 
-    const finalTotal = subtotal + deliveryFee;
+    const finalTotal = discountedTotal + deliveryFee;
     document.getElementById('modal-total-final').textContent = finalTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
@@ -658,10 +721,10 @@ function generateWhatsAppMessage() {
     const deliveryType = document.querySelector('input[name="delivery-type"]:checked').value;
     const address = document.getElementById('delivery-address').value;
 
-    // Usa o sistema de promoções para calcular totais
     const { subtotal, promoDetails, savings } = calculateCartWithPromotions();
+    const { discountedTotal, couponDiscount } = applyCouponToTotal(subtotal);
     let deliveryFee = deliveryType === 'delivery' ? 8.00 : 0;
-    const finalTotal = subtotal + deliveryFee;
+    const finalTotal = discountedTotal + deliveryFee;
 
     // Change logic
     const needChange = document.getElementById('need-change').checked;
@@ -701,14 +764,10 @@ function generateWhatsAppMessage() {
         message += `${item.qty}x ${item.name} (${item.type === 'mini' ? 'Mini' : 'Trad.'}) - ${itemTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
     });
 
-    // Adiciona informação da promoção aplicada
-    if (promoDetails.length > 0) {
-        message += `\n🏷️ *Promoção Aplicada:* ${promoDetails[0].name}\n`;
-        message += `📦 ${promoDetails[0].sets}x combo(s) de 3`;
-        if (promoDetails[0].extras > 0) {
-            message += ` + ${promoDetails[0].extras} un. avulsa(s)`;
-        }
-        message += `\n💰 *Economia:* ${savings.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+    // Adiciona informação do cupom aplicado
+    if (couponDiscount > 0) {
+        message += `\n🏷️ *Cupom Aplicado:* ${appliedCoupon}\n`;
+        message += `💰 *Desconto:* - ${couponDiscount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
     }
 
     if (deliveryType === 'delivery') {
@@ -733,6 +792,7 @@ function generateWhatsAppMessage() {
 
 function clearCart() {
     cart = {};
+    appliedCoupon = null;
     updateQuantityDisplays();
     updateFloatingCart();
     closeModal();
